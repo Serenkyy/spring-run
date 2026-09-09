@@ -92,6 +92,68 @@ test('手机上的快速点击也要跳得够高（不能被 jump-cut 吃掉）'
   assert.ok(air > 0.6 && air < 0.9, '滞空时间 ' + air.toFixed(2) + 's 不在手感区间');
 });
 
+test('所有道具都悬在空中：站着不动一个也捡不到', () => {
+  const st = Core.makeState({ seed: 21 });
+  Core.resetRun(st, { seed: 21 });
+  st.player.ducking = false;
+  st.player.h = T.PLAYER_H;
+  st.player.w = T.PLAYER_W;
+  const stand = Core.playerBox(st);
+  const m = T.PICKUP_MAGNET;
+  let checked = 0;
+  for (let i = 0; i < 60 * 120; i++) {
+    Core.step(st, 1 / 60, {});
+    for (const pk of st.pickups) {
+      if (pk.checked) continue;
+      pk.checked = true;
+      const box = { x: pk.x - m, y: pk.y - pk.h - m, w: pk.w + m * 2, h: pk.h + m * 2 };
+      assert.ok(!Core.aabb(stand.x, stand.y, stand.w, stand.h, box.x, box.y, box.w, box.h),
+        pk.kind + ' 站着就能吃到（y=' + pk.y.toFixed(1) + '，站立盒顶 ' + stand.y.toFixed(1) + '）');
+      checked++;
+    }
+    if (st.phase !== 'playing') Core.resetRun(st, { seed: 300 + i });
+  }
+  assert.ok(checked > 30, '检查到的道具太少: ' + checked);
+});
+
+test('什么都不做：捡不到东西，而且很快输（不能躺着赢）', () => {
+  for (const seed of [1, 2, 3, 4, 5, 6]) {
+    const st = Core.makeState({ seed });
+    Core.resetRun(st, { seed });
+    let frames = 0;
+    for (let i = 0; i < 60 * 40; i++) {
+      Core.step(st, 1 / 60, {});
+      frames++;
+      if (st.phase !== 'playing') break;
+    }
+    assert.equal(st.phase, 'over', 'seed ' + seed + ' 完全不动也不会输');
+    assert.equal(st.stats.pickups, 0, 'seed ' + seed + ' 白捡了 ' + st.stats.pickups + ' 个道具');
+    assert.ok(frames / 60 < 25, 'seed ' + seed + ' 不动能撑 ' + (frames / 60).toFixed(1) + ' 秒');
+  }
+});
+
+test('字母是稀有的，道具总量也不多', () => {
+  const st = Core.makeState({ seed: 33 });
+  Core.resetRun(st, { seed: 33 });
+  const ai = makeAI();
+  const seen = new Set();
+  let letters = 0, total = 0;
+  for (let i = 0; i < 60 * 180; i++) {
+    Core.step(st, 1 / 60, ai(st));
+    for (const pk of st.pickups) {
+      if (seen.has(pk)) continue;
+      seen.add(pk);
+      total++;
+      if (pk.kind === 'letter') letters++;
+    }
+    if (st.phase !== 'playing') Core.resetRun(st, { seed: 400 + i });
+  }
+  assert.ok(total > 10, '道具太少了: ' + total);
+  assert.ok(letters / total < 0.3, '字母占 ' + (letters / total * 100).toFixed(0) + '%，还是太多');
+  const perMin = total / 180 * 60;
+  assert.ok(perMin < 40, '道具密度还是太高: ' + perMin.toFixed(0) + ' 个/分钟');
+});
+
 test('世界几何：站立会撞到空中障碍，下蹲能钻过去', () => {
   const st = Core.makeState({ seed: 1 });
   Core.resetRun(st, { seed: 1 });

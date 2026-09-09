@@ -255,6 +255,61 @@ const overlap = hudRects.filter(r => r.op > 0.1 &&
 check('HUD 不遮挡角色', overlap.length === 0,
   overlap.length ? '遮挡元素: ' + overlap.map(r => r.s).join(',') : '角色 (' + Math.round(pRect.x) + ',' + Math.round(pRect.y) + ')，HUD 最底 ' + Math.round(Math.max(...hudRects.filter(r => r.op > 0.1).map(r => r.y + r.h))));
 
+/* ---------------- 3c. 朝向（必须朝右跑） ---------------- */
+await page.evaluate(() => {
+  const Z = window.__ZIYI__, s = Z.state;
+  Z.setFrozen(true);
+  s.obstacles.length = 0;
+  s.pickups.length = 0;
+  s.player.y = Z.Core.TUNE.GROUND_Y;
+  s.player.vy = 0;
+  s.player.onGround = true;
+  s.player.ducking = false;
+  s.player.runPhase = 0.9;
+});
+await page.waitForTimeout(200);        // 等画面按新状态重绘后再取样
+const facing = await page.evaluate(() => {
+  const Z = window.__ZIYI__, s = Z.state, v = Z.view;
+  const c = document.getElementById('game');
+  const ctx = c.getContext('2d');
+  const dpr = c.width / c.getBoundingClientRect().width;
+  const u = v.u;
+  const cx = (s.player.x + s.player.w / 2) * u;
+  const halfW = 6 * u;                       // 以角色中心对称取样
+  const x0 = Math.round((cx - halfW) * dpr);
+  const y0 = Math.round((s.player.y - 12.6) * u * dpr);
+  const pw = Math.round(halfW * 2 * dpr);
+  const ph = Math.round(5.4 * u * dpr);
+  const d = ctx.getImageData(x0, y0, pw, ph).data;
+  const split = pw / 2;
+  let hairL = 0, hairR = 0, skinL = 0, skinR = 0;
+  let hairMin = 1e9, hairMax = -1e9, skinMin = 1e9, skinMax = -1e9;
+  for (let i = 0; i < d.length; i += 4) {
+    const x = (i / 4) % pw;
+    const r = d[i], g = d[i + 1], b = d[i + 2];
+    if (r < 150 && g < 110 && b < 125) {
+      if (x < split) hairL++; else hairR++;
+      if (x < hairMin) hairMin = x; if (x > hairMax) hairMax = x;
+    }
+    // 肤色：偏暖（g > b），和粉色背景 / 樱花树冠（g < b）区分开
+    if (r > 235 && g > 185 && b < 215 && (g - b) > 10) {
+      if (x < split) skinL++; else skinR++;
+      if (x < skinMin) skinMin = x; if (x > skinMax) skinMax = x;
+    }
+  }
+  const toU = (x) => (x - split) / dpr / u;
+  return {
+    hairL, hairR, skinL, skinR,
+    hairMin: toU(hairMin), hairMax: toU(hairMax),
+    skinMin: toU(skinMin), skinMax: toU(skinMax)
+  };
+});
+const fmt = (f) => 'hair[' + f.hairMin.toFixed(1) + ',' + f.hairMax.toFixed(1) + '] skin[' +
+  f.skinMin.toFixed(1) + ',' + f.skinMax.toFixed(1) + '] hairL/R=' + (f.hairL / Math.max(1, f.hairR)).toFixed(2);
+check('马尾在身后（比脸更靠左）→ 朝右跑', facing.hairMin < facing.skinMin - 1.5, fmt(facing));
+check('脸/鼻子在前进方向（不比头发更靠左）', facing.skinMax > facing.hairMax - 0.5 && facing.skinR > facing.skinL,
+  fmt(facing));
+
 /* ---------------- 4. 碰撞与下蹲 ---------------- */
 
 console.log('\n[4] 碰撞判定');

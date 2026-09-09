@@ -49,7 +49,13 @@
 
     HITBOX_INSET_X: 1.2,
     HITBOX_INSET_Y: 0.8,
-    PICKUP_MAGNET: 1.6,
+    PICKUP_MAGNET: 2.0,
+    PICKUP_HEIGHT_MIN: 13,   // 道具都在空中：必须跳起来才拿得到
+    PICKUP_HEIGHT_MAX: 19,
+    PICKUP_GAP_MIN: 1.9,     // 道具之间的间隔（秒）
+    PICKUP_GAP_MAX: 3.4,
+    LETTER_CHANCE: 0.16,     // 平时出现字母的概率
+    LETTER_CHANCE_ACTIVE: 0.55, // 正在拼词时提高一点，但还是很稀有
     MILESTONE_STEP: 500
   };
 
@@ -124,10 +130,10 @@
     noodle:     { w: 9.6,  h: 5.2,  fly: false, label: '牛肉面' },
     tripod:     { w: 4.6,  h: 12.4, fly: false, label: '相机架' },
     shoe:       { w: 7.0,  h: 4.2,  fly: false, label: '跑鞋' },
-    note:       { w: 5.6,  h: 5.2,  fly: true,  label: '音符' },
-    ball:       { w: 4.4,  h: 4.4,  fly: true,  label: '网球' },
-    book:       { w: 6.2,  h: 4.6,  fly: true,  label: '俄语书' },
-    bird:       { w: 6.8,  h: 4.4,  fly: true,  label: '小鸟' }
+    note:       { w: 7.0,  h: 5.2,  fly: true,  label: '音符' },
+    ball:       { w: 5.6,  h: 4.6,  fly: true,  label: '网球' },
+    book:       { w: 7.6,  h: 4.8,  fly: true,  label: '俄语书' },
+    bird:       { w: 7.6,  h: 4.6,  fly: true,  label: '小鸟' }
   };
 
   /* 空中障碍的底边高度：必须高于下蹲身高（地面 72 - 蹲 6 = 66），
@@ -302,7 +308,7 @@
       },
       obstacles: [],
       pickups: [],
-      spawn: { nextObstacleAt: 26, nextPickupAt: 18, lastPattern: null, lastPickupAt: -99, forcePattern: null, lastSpawnDistance: -999 },
+      spawn: { nextObstacleAt: 30, nextPickupAt: 26, lastPattern: null, lastPickupAt: -99, forcePattern: null, lastSpawnDistance: -999 },
       word: { index: 0, progress: 0, ru: WORDS[0].ru, zh: WORDS[0].zh },
       milestone: 0,
       shake: 0,
@@ -336,8 +342,8 @@
     st.speed = TUNE.BASE_SPEED;
     st.obstacles.length = 0;
     st.pickups.length = 0;
-    st.spawn.nextObstacleAt = 34;
-    st.spawn.nextPickupAt = 20;
+    st.spawn.nextObstacleAt = 40;
+    st.spawn.nextPickupAt = 30;
     st.spawn.lastPattern = null;
     st.spawn.lastPickupAt = -99;
     st.spawn.forcePattern = null;
@@ -465,10 +471,34 @@
     }
 
     // 组间间隔：按时间给，随等级略微收紧，但有硬下限保证可解
-    var gapTime = clamp(1.45 - 0.035 * st.level, 1.0, 1.45) + st.rng() * 0.55;
+    var gapTime = clamp(1.75 - 0.04 * st.level, 1.15, 1.75) + st.rng() * 0.7;
     var spanTime = lastDt + 0.6;
     st.spawn.nextObstacleAt = st.distance + speed * (spanTime + gapTime);
+
+    pruneUnsafePickups(st);
     return chosen.items.length;
+  }
+
+  /* 刚生成了障碍，检查一下附近的道具会不会「跳起来吃它就正好撞上障碍」。
+     道具是可选的，所以直接挪掉最安全 —— 宁可少一个，也不要坑玩家。 */
+  function pruneUnsafePickups(st) {
+    var speed = st.speed;
+    for (var i = st.pickups.length - 1; i >= 0; i--) {
+      var pk = st.pickups[i];
+      var airFrom = pk.x - speed * 0.55;      // 为了吃到它，大约要在这里起跳
+      var airTo = pk.x + speed * 0.55;        // 大约在这里落地
+      var bad = false;
+      for (var j = 0; j < st.obstacles.length; j++) {
+        var o = st.obstacles[j];
+        // 道具和障碍挤在一起
+        if (pk.x < o.x + o.w + 4 && pk.x + pk.w + 4 > o.x) { bad = true; break; }
+        // 地面障碍：正好落在它身上
+        if (!o.fly && airTo > o.x - 5 && airFrom < o.x + o.w + 5) { bad = true; break; }
+        // 空中障碍：为了吃道具起跳会一头撞上去
+        if (o.fly && airTo > o.x - 3 && airFrom < o.x + o.w + 3) { bad = true; break; }
+      }
+      if (bad) st.pickups.splice(i, 1);
+    }
   }
 
   function pickupBlocked(st, x, w) {
@@ -482,26 +512,24 @@
   function spawnPickup(st) {
     var roll = st.rng();
     var kind, def;
-    // 爱心稀有，牛肉面中等，音符常见；单词字母优先保证出现
-    var wordActive = st.word.progress > 0 || st.rng() < 0.42;
-    if (wordActive && !pickupBlocked(st, st.world.w + 6, PICKUPS.letter.w)) {
+    // 字母要稀有：正在拼词时稍多一点，否则偶尔才出现
+    var letterChance = st.word.progress > 0 ? TUNE.LETTER_CHANCE_ACTIVE : TUNE.LETTER_CHANCE;
+    if (st.rng() < letterChance && !pickupBlocked(st, st.world.w + 6, PICKUPS.letter.w)) {
       kind = 'letter';
-    } else if (roll < 0.08) {
+    } else if (roll < 0.12) {
       kind = 'heart';
-    } else if (roll < 0.24) {
+    } else if (roll < 0.34) {
       kind = 'noodle';
     } else {
       kind = 'note';
     }
     def = PICKUPS[kind];
 
-    var airborne = st.rng() < (kind === 'letter' ? 0.62 : 0.5);
-    var y = airborne
-      ? TUNE.GROUND_Y - rangeOf(st.rng, 10, 17)
-      : TUNE.GROUND_Y;
+    // 全部悬在空中：只有跳起来才拿得到（站着不动什么也捡不到）
+    var y = TUNE.GROUND_Y - rangeOf(st.rng, TUNE.PICKUP_HEIGHT_MIN, TUNE.PICKUP_HEIGHT_MAX);
     var x = st.world.w + 6;
     if (pickupBlocked(st, x, def.w)) {
-      st.spawn.nextPickupAt = st.distance + 8;
+      st.spawn.nextPickupAt = st.distance + st.speed * 1.2;
       return;
     }
 
@@ -517,7 +545,7 @@
       kind: kind, x: x, y: y, w: def.w, h: def.h,
       xp: def.xp, ch: ch, bob: st.rng() * Math.PI * 2, taken: false
     });
-    st.spawn.nextPickupAt = st.distance + rangeOf(st.rng, 14, 26);
+    st.spawn.nextPickupAt = st.distance + st.speed * rangeOf(st.rng, TUNE.PICKUP_GAP_MIN, TUNE.PICKUP_GAP_MAX);
   }
 
   /* ---------------------------- 物理 ---------------------------- */

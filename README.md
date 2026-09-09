@@ -45,8 +45,8 @@ node tools/build.mjs
 ## 测试
 
 ```bash
-node --test test/core.test.mjs   # 逻辑：物理、碰撞、升级、存档不变量（15 项，很快）
-node tools/verify.mjs            # 真浏览器端到端 + 截图（61 项，需要 tools/ 里装过 playwright）
+node --test test/core.test.mjs   # 逻辑：物理、碰撞、升级、存档不变量（18 项，很快）
+node tools/verify.mjs            # 真浏览器端到端 + 截图（63 项，需要 tools/ 里装过 playwright）
 ```
 
 ## 文件结构

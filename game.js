@@ -124,7 +124,7 @@
 
   function seedPetals() {
     petals = [];
-    for (var i = 0; i < 22; i++) {
+    for (var i = 0; i < 7; i++) {
       petals.push({
         x: Math.random() * (view.cssW / view.u + 20) - 10,
         y: -10 + Math.random() * 120,
@@ -132,7 +132,7 @@
         vy: 2.4 + Math.random() * 3.6,
         sway: Math.random() * 6.28,
         spin: (Math.random() - 0.5) * 2.4,
-        a: 0.35 + Math.random() * 0.5
+        a: 0.18 + Math.random() * 0.25
       });
     }
   }
@@ -326,99 +326,125 @@
 
   /* ============================ 角色 ============================ */
 
-  function drawLeg(c, phase, back) {
-    var sw = Math.sin(phase) * 1.7;
-    var hipX = back ? -0.5 : 0.5, hipY = -4.4;
-    var kneeX = hipX + sw * 0.55, kneeY = hipY + 1.85 + Math.abs(sw) * 0.15;
-    var footX = hipX + sw * 1.05, footY = -0.5;
-    c.lineCap = 'round';
-    c.strokeStyle = back ? '#F2C4A8' : PAL.skin;
-    c.lineWidth = 1.15;
-    c.beginPath(); c.moveTo(hipX, hipY); c.lineTo(kneeX, kneeY); c.stroke();
-    c.beginPath(); c.moveTo(kneeX, kneeY); c.lineTo(footX, footY); c.stroke();
-    // 跑鞋
+  var SKIN_BACK = '#F0C0A4';
+
+  /* 鞋尖一律朝右（前进方向），这是"她往前跑"最直接的提示 */
+  function drawShoe(c, back, tilt) {
     c.save();
-    c.translate(footX, footY + 0.15);
-    c.rotate(sw * 0.12);
-    c.fillStyle = back ? '#F0F0F0' : '#FFFFFF';
-    rr(c, -0.95, -0.75, 2.1, 1.35, 0.6); c.fill();
-    c.fillStyle = PAL.pink;
-    rr(c, -0.95, 0.05, 2.1, 0.55, 0.28); c.fill();
+    c.rotate(tilt);
+    c.fillStyle = back ? '#F2F2F2' : '#FFFFFF';
+    c.beginPath();
+    c.moveTo(-0.78, 0.16);
+    c.lineTo(-0.72, -0.72);
+    c.quadraticCurveTo(0.1, -0.98, 1.02, -0.4);
+    c.quadraticCurveTo(1.3, 0.02, 0.86, 0.16);
+    c.closePath();
+    c.fill();
+    c.fillStyle = back ? '#F6B6CE' : PAL.pink;
+    rr(c, -0.78, 0.02, 1.86, 0.44, 0.2);
+    c.fill();
     c.restore();
   }
 
-  function drawArm(c, phase, back) {
-    var sw = Math.sin(phase + Math.PI) * 1.5;
-    var sx = back ? -1.5 : 1.5, sy = -7.2;
-    var ex = sx + sw * 0.9, ey = sy + 1.5;
-    var hx = sx + sw * 1.7, hy = sy + 2.4;
+  /* 两条腿必须反相，否则看起来像并脚跳 */
+  function drawLeg(c, phase, back) {
+    var sw = Math.sin(phase);
+    var lift = Math.max(0, Math.sin(phase + 0.9));
+    var hipX = back ? -0.5 : 0.55, hipY = -4.5;
+    var kneeX = hipX + sw * 0.9;
+    var kneeY = hipY + 1.7 - lift * 0.3;
+    var footX = hipX + sw * 1.5;
+    var footY = -0.5 - lift * 1.05;
     c.lineCap = 'round';
-    c.strokeStyle = back ? '#F2C4A8' : PAL.skin;
-    c.lineWidth = 0.95;
-    c.beginPath(); c.moveTo(sx, sy); c.lineTo(ex, ey); c.lineTo(hx, hy); c.stroke();
-    c.fillStyle = back ? '#F2C4A8' : PAL.skin;
-    circle(c, hx, hy, 0.55); c.fill();
+    c.strokeStyle = back ? SKIN_BACK : PAL.skin;
+    c.lineWidth = back ? 1.0 : 1.15;
+    c.beginPath(); c.moveTo(hipX, hipY); c.lineTo(kneeX, kneeY); c.stroke();
+    c.beginPath(); c.moveTo(kneeX, kneeY); c.lineTo(footX, footY); c.stroke();
+    c.save();
+    c.translate(footX, footY);
+    drawShoe(c, back, sw * 0.14);
+    c.restore();
   }
 
+  /* 手臂弯曲、前后摆，且与同侧腿反相（右腿在前 → 左臂在前） */
+  function drawArm(c, phase, back) {
+    var sw = Math.sin(phase);
+    var sx = back ? -0.7 : 0.75, sy = -7.5;
+    var ex = sx + sw * 1.0;
+    var ey = sy + 1.15;
+    var hx = ex + sw * 0.8 + 0.3;
+    var hy = ey + 0.5;
+    c.lineCap = 'round';
+    c.strokeStyle = back ? SKIN_BACK : PAL.skin;
+    c.lineWidth = back ? 0.82 : 0.95;
+    c.beginPath(); c.moveTo(sx, sy); c.lineTo(ex, ey); c.lineTo(hx, hy); c.stroke();
+    c.fillStyle = back ? SKIN_BACK : PAL.skin;
+    circle(c, hx, hy, 0.5); c.fill();
+  }
+
+  /* 3/4 侧脸，朝右：眼睛、鼻子、嘴都在脸的右半边 */
   function drawHead(c, t, mood) {
-    var bob = Math.sin(t * 2) * 0.12;
-    var hx = 0, hy = -9.85 + bob;
-    // 后发
+    var bob = Math.sin(t * 2.2) * 0.1;
+    var hx = 0.35, hy = -9.7 + bob;
+    // 后脑 + 马尾（在身后 = 左边）
     c.fillStyle = PAL.hair;
     c.beginPath();
-    c.ellipse(hx, hy + 0.2, 2.75, 2.6, 0, 0, Math.PI * 2);
+    c.ellipse(hx - 0.25, hy + 0.15, 2.5, 2.45, 0, 0, Math.PI * 2);
     c.fill();
-    // 马尾
-    var sway = Math.sin(t * 3.1) * 0.55;
+    var sway = Math.sin(t * 3.1) * 0.5;
     c.beginPath();
-    c.moveTo(hx - 1.6, hy - 0.6);
-    c.quadraticCurveTo(hx - 4.4 + sway, hy - 1.6, hx - 5.2 + sway * 1.4, hy + 1.6);
-    c.quadraticCurveTo(hx - 3.6 + sway, hy + 1.2, hx - 1.9, hy + 0.9);
+    c.moveTo(hx - 1.5, hy - 0.9);
+    c.quadraticCurveTo(hx - 4.2 + sway, hy - 2.0, hx - 5.1 + sway * 1.4, hy + 1.2);
+    c.quadraticCurveTo(hx - 3.4 + sway, hy + 0.9, hx - 1.8, hy + 0.6);
     c.closePath();
     c.fill();
-    // 发带
+    // 发带蝴蝶结
     c.fillStyle = PAL.pink;
     c.beginPath();
-    c.ellipse(hx - 2.3, hy - 0.9, 1.05, 0.72, -0.5, 0, Math.PI * 2);
+    c.ellipse(hx - 2.2, hy - 1.1, 1.0, 0.68, -0.5, 0, Math.PI * 2);
     c.fill();
     c.beginPath();
-    c.ellipse(hx - 3.3, hy - 0.2, 0.75, 0.5, -0.9, 0, Math.PI * 2);
+    c.ellipse(hx - 3.1, hy - 0.35, 0.72, 0.48, -0.95, 0, Math.PI * 2);
     c.fill();
     // 脸
     c.fillStyle = PAL.skin;
-    circle(c, hx, hy + 0.35, 2.15); c.fill();
+    circle(c, hx + 0.15, hy + 0.3, 2.05); c.fill();
+    // 小鼻子（朝右，最直接的方向提示）
+    c.beginPath();
+    c.moveTo(hx + 1.95, hy + 0.05);
+    c.quadraticCurveTo(hx + 2.5, hy + 0.35, hx + 1.95, hy + 0.6);
+    c.closePath();
+    c.fill();
     // 刘海
     c.fillStyle = PAL.hair;
     c.beginPath();
-    c.moveTo(hx - 2.2, hy - 0.1);
-    c.quadraticCurveTo(hx - 1.6, hy - 2.5, hx + 0.4, hy - 2.3);
-    c.quadraticCurveTo(hx + 2.1, hy - 2.2, hx + 2.2, hy - 0.4);
-    c.quadraticCurveTo(hx + 1.2, hy - 1.5, hx - 0.1, hy - 1.5);
-    c.quadraticCurveTo(hx - 1.4, hy - 1.5, hx - 2.2, hy - 0.1);
+    c.moveTo(hx - 2.0, hy + 0.1);
+    c.quadraticCurveTo(hx - 1.4, hy - 2.4, hx + 0.6, hy - 2.2);
+    c.quadraticCurveTo(hx + 2.1, hy - 2.0, hx + 2.05, hy - 0.2);
+    c.quadraticCurveTo(hx + 1.0, hy - 1.5, hx - 0.2, hy - 1.5);
+    c.quadraticCurveTo(hx - 1.3, hy - 1.5, hx - 2.0, hy + 0.1);
     c.closePath();
     c.fill();
-    // 眼睛
+    // 眼睛（都在右半边 → 看得出是侧脸）
     c.fillStyle = '#5B3A45';
     var blink = (t % 4.2) > 4.05;
     if (blink || mood === 'happy') {
-      c.strokeStyle = '#5B3A45'; c.lineWidth = 0.28; c.lineCap = 'round';
-      c.beginPath(); c.moveTo(hx - 1.25, hy + 0.35); c.lineTo(hx - 0.45, hy + 0.35); c.stroke();
-      c.beginPath(); c.moveTo(hx + 0.45, hy + 0.35); c.lineTo(hx + 1.25, hy + 0.35); c.stroke();
+      c.strokeStyle = '#5B3A45'; c.lineWidth = 0.26; c.lineCap = 'round';
+      c.beginPath(); c.moveTo(hx + 0.35, hy + 0.35); c.lineTo(hx + 1.0, hy + 0.35); c.stroke();
+      c.beginPath(); c.moveTo(hx + 1.5, hy + 0.3); c.lineTo(hx + 1.95, hy + 0.3); c.stroke();
     } else {
-      circle(c, hx - 0.85, hy + 0.4, 0.34); c.fill();
-      circle(c, hx + 0.85, hy + 0.4, 0.34); c.fill();
+      circle(c, hx + 0.7, hy + 0.35, 0.3); c.fill();
+      circle(c, hx + 1.68, hy + 0.3, 0.26); c.fill();
       c.fillStyle = '#FFFFFF';
-      circle(c, hx - 0.73, hy + 0.28, 0.12); c.fill();
-      circle(c, hx + 0.97, hy + 0.28, 0.12); c.fill();
+      circle(c, hx + 0.78, hy + 0.26, 0.1); c.fill();
     }
     // 腮红
     c.fillStyle = 'rgba(255,140,175,0.45)';
-    circle(c, hx - 1.55, hy + 1.05, 0.5); c.fill();
-    circle(c, hx + 1.55, hy + 1.05, 0.5); c.fill();
+    circle(c, hx + 1.25, hy + 1.05, 0.45); c.fill();
     // 嘴
-    c.strokeStyle = '#B95C7A'; c.lineWidth = 0.26; c.lineCap = 'round';
+    c.strokeStyle = '#B95C7A'; c.lineWidth = 0.24; c.lineCap = 'round';
     c.beginPath();
-    c.arc(hx, hy + 0.85, 0.55, 0.25, Math.PI - 0.25);
+    c.arc(hx + 1.15, hy + 0.95, 0.45, 0.3, Math.PI - 0.4);
     c.stroke();
   }
 
@@ -451,6 +477,86 @@
     circle(c, 0, -5.0, 0.42); c.fill();
   }
 
+  /* 跳跃：腿收起、手向上 */
+  function drawJump(c, t, phase) {
+    c.rotate(0.05);
+    c.lineCap = 'round';
+    // 后腿
+    c.strokeStyle = SKIN_BACK; c.lineWidth = 1.0;
+    c.beginPath(); c.moveTo(-0.5, -4.5); c.lineTo(-1.7, -3.2); c.lineTo(-1.5, -1.6); c.stroke();
+    // 后手
+    c.strokeStyle = SKIN_BACK; c.lineWidth = 0.82;
+    c.beginPath(); c.moveTo(-0.7, -7.5); c.lineTo(-1.7, -8.6); c.lineTo(-1.6, -9.9); c.stroke();
+    c.fillStyle = SKIN_BACK; circle(c, -1.6, -9.9, 0.5); c.fill();
+    drawBody(c, phase);
+    // 前腿
+    c.strokeStyle = PAL.skin; c.lineWidth = 1.15;
+    c.beginPath(); c.moveTo(0.55, -4.5); c.lineTo(1.8, -3.5); c.lineTo(1.6, -1.7); c.stroke();
+    // 前手
+    c.strokeStyle = PAL.skin; c.lineWidth = 0.95;
+    c.beginPath(); c.moveTo(0.75, -7.5); c.lineTo(1.8, -8.7); c.lineTo(1.8, -10.1); c.stroke();
+    c.fillStyle = PAL.skin; circle(c, 1.8, -10.1, 0.5); c.fill();
+    // 鞋
+    c.save(); c.translate(-1.5, -1.6); drawShoe(c, true, -0.28); c.restore();
+    c.save(); c.translate(1.6, -1.7); drawShoe(c, false, 0.24); c.restore();
+    drawHead(c, t, 'happy');
+  }
+
+  /* 蹲下：低伏滑行，头仍然朝前（右） */
+  function drawDuck(c, t) {
+    c.rotate(0.02);
+    c.lineCap = 'round';
+    // 后腿
+    c.strokeStyle = SKIN_BACK; c.lineWidth = 1.0;
+    c.beginPath(); c.moveTo(-1.6, -2.7); c.lineTo(-3.0, -1.2); c.lineTo(-3.4, -0.6); c.stroke();
+    c.save(); c.translate(-3.4, -0.6); drawShoe(c, true, 0); c.restore();
+    // 身体（前倾）
+    c.fillStyle = PAL.pink;
+    c.beginPath(); c.ellipse(-0.3, -3.1, 3.0, 1.85, 0.12, 0, Math.PI * 2); c.fill();
+    c.fillStyle = 'rgba(255,255,255,0.32)';
+    c.beginPath(); c.ellipse(-0.1, -3.7, 1.9, 0.65, 0.1, 0, Math.PI * 2); c.fill();
+    // 前腿
+    c.strokeStyle = PAL.skin; c.lineWidth = 1.15;
+    c.beginPath(); c.moveTo(1.0, -2.5); c.lineTo(2.2, -1.3); c.lineTo(2.6, -0.7); c.stroke();
+    c.save(); c.translate(2.6, -0.7); drawShoe(c, false, 0); c.restore();
+    // 手向前伸
+    c.strokeStyle = PAL.skin; c.lineWidth = 0.95;
+    c.beginPath(); c.moveTo(0.5, -3.5); c.lineTo(1.9, -3.1); c.lineTo(3.0, -2.5); c.stroke();
+    c.fillStyle = PAL.skin; circle(c, 3.0, -2.5, 0.5); c.fill();
+    // 头（前方偏右，压低）
+    c.save();
+    c.translate(2.5, -4.2);
+    c.rotate(0.16);
+    c.fillStyle = PAL.hair;
+    c.beginPath(); c.ellipse(-0.5, 0.1, 2.3, 2.15, 0, 0, Math.PI * 2); c.fill();
+    c.beginPath();
+    c.moveTo(-2.0, -0.6);
+    c.quadraticCurveTo(-4.4, -1.4, -5.0, 0.8);
+    c.quadraticCurveTo(-3.4, 0.6, -2.0, 0.5);
+    c.closePath(); c.fill();
+    c.fillStyle = PAL.pink;
+    c.beginPath(); c.ellipse(-2.4, -0.7, 0.9, 0.6, -0.5, 0, Math.PI * 2); c.fill();
+    c.fillStyle = PAL.skin;
+    circle(c, 0.2, 0.3, 1.9); c.fill();
+    c.beginPath();
+    c.moveTo(1.8, 0.1);
+    c.quadraticCurveTo(2.35, 0.4, 1.8, 0.65);
+    c.closePath(); c.fill();
+    c.fillStyle = PAL.hair;
+    c.beginPath();
+    c.moveTo(-1.8, 0.1);
+    c.quadraticCurveTo(-1.2, -2.1, 0.7, -1.9);
+    c.quadraticCurveTo(1.9, -1.7, 1.9, -0.1);
+    c.quadraticCurveTo(0.8, -1.3, -1.8, 0.1);
+    c.closePath(); c.fill();
+    c.fillStyle = '#5B3A45';
+    circle(c, 0.6, 0.35, 0.28); c.fill();
+    circle(c, 1.5, 0.3, 0.24); c.fill();
+    c.fillStyle = 'rgba(255,140,175,0.45)';
+    circle(c, 1.2, 1.0, 0.42); c.fill();
+    c.restore();
+  }
+
   function drawPlayer(c, p, t) {
     if (p.invuln > 0 && Math.floor(p.invuln * 14) % 2 === 0 && st_isPlaying()) {
       c.globalAlpha = 0.45;
@@ -462,61 +568,16 @@
     c.scale(1 - squash * 0.35, 1 + squash * 0.35);
 
     if (p.ducking) {
-      // 蹲下 / 滑行
-      c.save();
-      c.translate(0.6, 0);
-      c.fillStyle = PAL.skin;
-      c.beginPath(); c.ellipse(-0.2, -3.2, 2.5, 2.0, 0.15, 0, Math.PI * 2); c.fill();
-      c.fillStyle = PAL.pink;
-      c.beginPath();
-      c.moveTo(-3.4, -3.4);
-      c.quadraticCurveTo(-1.0, -6.0, 1.9, -4.6);
-      c.quadraticCurveTo(2.4, -2.6, 0.4, -1.6);
-      c.quadraticCurveTo(-1.8, -1.2, -3.4, -3.4);
-      c.closePath(); c.fill();
-      // 腿
-      c.strokeStyle = PAL.skin; c.lineWidth = 1.15; c.lineCap = 'round';
-      c.beginPath(); c.moveTo(-1.2, -2.4); c.lineTo(-2.6, -0.9); c.stroke();
-      c.beginPath(); c.moveTo(-0.2, -2.2); c.lineTo(-1.4, -0.7); c.stroke();
-      c.fillStyle = '#FFFFFF';
-      rr(c, -3.5, -1.2, 2.1, 1.3, 0.6); c.fill();
-      // 头
-      c.save();
-      c.translate(2.0, -4.4);
-      c.rotate(0.18);
-      c.fillStyle = PAL.hair;
-      c.beginPath(); c.ellipse(-0.5, 0.2, 2.5, 2.35, 0, 0, Math.PI * 2); c.fill();
-      c.fillStyle = PAL.skin;
-      circle(c, 0.25, 0.3, 1.95); c.fill();
-      c.fillStyle = PAL.hair;
-      c.beginPath();
-      c.moveTo(-1.9, 0.1); c.quadraticCurveTo(-1.2, -2.2, 0.6, -2.0);
-      c.quadraticCurveTo(2.0, -1.8, 2.0, -0.1);
-      c.quadraticCurveTo(0.6, -1.3, -1.9, 0.1); c.closePath(); c.fill();
-      c.fillStyle = '#5B3A45';
-      circle(c, 0.35, 0.45, 0.3); c.fill();
-      circle(c, 1.55, 0.45, 0.3); c.fill();
-      c.fillStyle = 'rgba(255,140,175,0.45)';
-      circle(c, 1.9, 1.15, 0.45); c.fill();
-      c.restore();
-      c.restore();
+      drawDuck(c, t);
     } else if (!p.onGround) {
-      // 跳跃
-      drawLeg(c, phase, true);
-      drawLeg(c, phase, false);
-      drawArm(c, phase, true);
-      drawBody(c, phase);
-      drawArm(c, phase, false);
-      drawHead(c, t, 'happy');
-      // 跳起来时腿收起来一点
-      c.fillStyle = PAL.pink;
-      circle(c, -1.2, -3.0, 0.9); c.fill();
+      drawJump(c, t, phase);
     } else {
-      drawLeg(c, phase, true);
-      drawLeg(c, phase, false);
-      drawArm(c, phase, true);
+      c.rotate(0.07);                    // 身体前倾 = 在往前跑
+      drawLeg(c, phase + Math.PI, true); // 远腿（与近腿反相）
+      drawArm(c, phase, true);           // 远手（与远腿反相）
       drawBody(c, phase);
-      drawArm(c, phase, false);
+      drawLeg(c, phase, false);          // 近腿
+      drawArm(c, phase + Math.PI, false);// 近手（与近腿反相）
       drawHead(c, t, 'run');
     }
     c.restore();
@@ -868,7 +929,7 @@
     ctx.translate(0, 0);
 
     // 云
-    var cSpacing = 34;
+    var cSpacing = 48;
     var cScroll = scrollX * 0.09;
     var start = Math.floor((cScroll - 20) / cSpacing);
     for (var i = start; i < start + Math.ceil(view.worldW / cSpacing) + 3; i++) {
@@ -899,7 +960,7 @@
     ctx.closePath(); ctx.fill();
 
     // 樱花树
-    var tSpacing = 23;
+    var tSpacing = 34;
     var tScroll = scrollX * 0.42;
     var tStart = Math.floor((tScroll - 20) / tSpacing);
     for (var ti = tStart; ti < tStart + Math.ceil(view.worldW / tSpacing) + 3; ti++) {
@@ -929,8 +990,8 @@
     ctx.fillStyle = trackGrad;
     ctx.fillRect(-2, T.GROUND_Y, view.worldW + 4, 12);
     // 跑道虚线
-    ctx.fillStyle = 'rgba(255,255,255,0.85)';
-    var laneSpacing = 9;
+    ctx.fillStyle = 'rgba(255,255,255,0.55)';
+    var laneSpacing = 11;
     var laneStart = Math.floor((scrollX - 6) / laneSpacing);
     for (var li = laneStart; li < laneStart + Math.ceil(view.worldW / laneSpacing) + 3; li++) {
       var lx = li * laneSpacing - scrollX;
@@ -941,7 +1002,7 @@
     ctx.fillRect(-2, T.GROUND_Y - 0.35, view.worldW + 4, 0.5);
 
     // 草地上的小花
-    var fSpacing = 5.5;
+    var fSpacing = 9;
     var fStart = Math.floor((scrollX * 1.02 - 6) / fSpacing);
     for (var fi = fStart; fi < fStart + Math.ceil(view.worldW / fSpacing) + 3; fi++) {
       var fx = fi * fSpacing - scrollX * 1.02 + hash(fi * 11.3) * 3;
