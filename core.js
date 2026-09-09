@@ -52,8 +52,8 @@
     PICKUP_MAGNET: 2.0,
     PICKUP_HEIGHT_MIN: 13,   // 道具都在空中：必须跳起来才拿得到
     PICKUP_HEIGHT_MAX: 19,
-    PICKUP_GAP_MIN: 1.4,     // 道具之间的间隔（秒）
-    PICKUP_GAP_MAX: 2.5,
+    PICKUP_GAP_MIN: 1.3,     // 道具之间的间隔（秒）
+    PICKUP_GAP_MAX: 2.3,
     LETTER_CHANCE: 0.85,     // 平时出现字母的概率
     LETTER_CHANCE_ACTIVE: 0.95, // 正在拼词时几乎必出
     LETTER_STREAK_MAX: 5,    // 连续 5 个字母后强制换别的道具（免得爱心/牛肉面被挤没）

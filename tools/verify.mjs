@@ -529,9 +529,12 @@ await page.screenshot({ path: path.join(SHOTS, '04b-highlevel.png') });
 console.log('\n[7] 结束与存档');
 await page.evaluate(() => {
   const Z = window.__ZIYI__, s = Z.state, T = Z.Core.TUNE;
+  // 清掉 AI 残留的输入和跳跃缓冲，否则她会原地起跳躲开这个障碍
+  Z.input.jump = false; Z.input.jumpPressed = false; Z.input.duck = false;
   s.obstacles.length = 0;
   s.pickups.length = 0;
-  s.player.y = T.GROUND_Y; s.player.vy = 0; s.player.onGround = true; s.player.ducking = false;
+  s.player.y = T.GROUND_Y; s.player.vy = 0; s.player.onGround = true;
+  s.player.ducking = false; s.player.buffer = 0; s.player.coyote = 0;
   s.hearts = 1;
   s.player.invuln = 0;
   s.obstacles.push({ kind: 'piano', x: s.player.x + 0.5, y: T.GROUND_Y, w: 8.4, h: 9.5, fly: false, hit: false, wobble: 0, passed: false });
