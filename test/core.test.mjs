@@ -151,12 +151,15 @@ test('字母是稀有的，道具总量也不多', () => {
     if (st.phase !== 'playing') Core.resetRun(st, { seed: 400 + i });
   }
   assert.ok(total > 10, '道具太少了: ' + total);
-  assert.ok(letters / total < 0.45, '基线字母占 ' + (letters / total * 100).toFixed(0) + '%，还是太多');
   const perMin = total / 180 * 60;
-  assert.ok(perMin < 40, '道具密度还是太高: ' + perMin.toFixed(0) + ' 个/分钟');
+  assert.ok(perMin < 45, '道具密度还是太高: ' + perMin.toFixed(0) + ' 个/分钟');
   const letterPerMin = letters / 180 * 60;
-  assert.ok(letterPerMin > 2.5 && letterPerMin < 12,
-    '字母频率 ' + letterPerMin.toFixed(1) + ' 个/分钟，应该在 2.5~12 之间');
+  const otherPerMin = (total - letters) / 180 * 60;
+  assert.ok(letterPerMin > 15 && letterPerMin < 40,
+    '字母频率 ' + letterPerMin.toFixed(1) + ' 个/分钟，应该在 15~40 之间');
+  assert.ok(otherPerMin > 2,
+    '别的道具被字母挤没了: ' + otherPerMin.toFixed(1) + ' 个/分钟');
+  assert.ok(letters / total < 0.92, '字母占 ' + (letters / total * 100).toFixed(0) + '%，别的道具全没了');
 });
 
 test('源码里没有重名的函数（曾经重名把角色的鞋子画没了）', () => {

@@ -327,6 +327,42 @@ const shoes = await page.evaluate(() => {
 });
 check('脚上真的有白色跑鞋（函数重名 bug 的回归测试）', shoes.white > 25, JSON.stringify(shoes));
 
+/* 脸：必须有两只眼睛，而且嘴要在眼睛下面（用户报过：没有左眼、微笑长在鼻子上） */
+const face = await page.evaluate(() => {
+  const Z = window.__ZIYI__, s = Z.state, v = Z.view, T = Z.Core.TUNE;
+  const c = document.getElementById('game');
+  const ctx = c.getContext('2d');
+  const dpr = c.width / c.getBoundingClientRect().width;
+  const u = v.u;
+  const x0 = Math.round((s.player.x - 3) * u * dpr);
+  const y0 = Math.round((T.GROUND_Y - 14) * u * dpr);
+  const pw = Math.round((s.player.w + 8) * u * dpr);
+  const ph = Math.round(8 * u * dpr);
+  const d = ctx.getImageData(x0, y0, pw, ph).data;
+  const eyes = [], mouth = [];
+  for (let i = 0; i < d.length; i += 4) {
+    const p = i / 4, x = p % pw, y = Math.floor(p / pw);
+    const r = d[i], g = d[i + 1], b = d[i + 2];
+    // 眼睛 #5B3A45 (91,58,69) —— 要比头发 #6B4A55 (107,74,85) 更深
+    if (r < 100 && g < 72 && b < 85) eyes.push([x, y]);
+    // 嘴 #B95C7A：中等饱和的粉红
+    if (r > 160 && r < 215 && g > 70 && g < 125 && b > 100 && b < 150) mouth.push([x, y]);
+  }
+  const xs = eyes.map(e => e[0]).sort((a, b) => a - b);
+  let clusters = 0, run = 0, prev = -999;
+  for (const x of xs) {
+    if (x - prev > 6) { if (run >= 8) clusters++; run = 0; }
+    run++; prev = x;
+  }
+  if (run >= 8) clusters++;
+  const avgY = (arr) => arr.length ? arr.reduce((a, p) => a + p[1], 0) / arr.length : -1;
+  return { clusters, eyeCount: eyes.length, mouthCount: mouth.length, eyeY: avgY(eyes), mouthY: avgY(mouth), ph };
+});
+check('脸上有两只分开的眼睛（左眼别再丢了）', face.clusters >= 2 && face.eyeCount > 40,
+  'cluster=' + face.clusters + ' eyes=' + face.eyeCount);
+check('嘴在眼睛下面（微笑不在鼻子上）', face.mouthCount > 10 && face.mouthY > face.eyeY + 4,
+  'eyeY=' + face.eyeY.toFixed(1) + ' mouthY=' + face.mouthY.toFixed(1) + ' mouthPx=' + face.mouthCount);
+
 check('马尾在身后（比脸更靠左）→ 朝右跑', facing.hairMin < facing.skinMin - 1.5, fmt(facing));
 check('脸/鼻子在前进方向（不比头发更靠左）', facing.skinMax > facing.hairMax - 0.5 && facing.skinR > facing.skinL,
   fmt(facing));

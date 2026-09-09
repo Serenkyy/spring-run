@@ -370,10 +370,11 @@
   /* 手臂弯曲、前后摆，且与同侧腿反相（右腿在前 → 左臂在前） */
   function drawArm(c, phase, back) {
     var sw = Math.sin(phase);
-    var sx = back ? -1.05 : 1.15, sy = -7.3;
-    var ex = sx + sw * 1.25;
-    var ey = sy + 1.05;
-    var hx = ex + sw * 1.05 + 0.15;
+    // 肩点在身体侧面（不是脖子）：往下、往外挪
+    var sx = back ? -1.25 : 1.35, sy = -6.9;
+    var ex = sx + sw * 1.15;
+    var ey = sy + 1.1;
+    var hx = ex + sw * 1.0 + 0.1;
     var hy = ey + 0.6;
     c.lineCap = 'round';
     c.strokeStyle = back ? SKIN_BACK : PAL.skin;
@@ -410,10 +411,10 @@
     // 脸
     c.fillStyle = PAL.skin;
     circle(c, hx + 0.15, hy + 0.3, 2.05); c.fill();
-    // 小鼻子（朝右，最直接的方向提示）
+    // 小鼻子（朝右的凸起，位置抬高一点，别和嘴挤在一起）
     c.beginPath();
-    c.moveTo(hx + 1.95, hy + 0.05);
-    c.quadraticCurveTo(hx + 2.5, hy + 0.35, hx + 1.95, hy + 0.6);
+    c.moveTo(hx + 1.9, hy + 0.15);
+    c.quadraticCurveTo(hx + 2.42, hy + 0.4, hx + 1.9, hy + 0.62);
     c.closePath();
     c.fill();
     // 刘海
@@ -426,26 +427,28 @@
     c.quadraticCurveTo(hx - 1.3, hy - 1.5, hx - 2.0, hy + 0.1);
     c.closePath();
     c.fill();
-    // 眼睛（都在右半边 → 看得出是侧脸）
-    c.fillStyle = '#5B3A45';
+    // 眼睛：左右各一只（远的那只小一点，近的大一点 —— 3/4 侧脸）
+    var eyeFarX = hx - 0.5, eyeNearX = hx + 1.15, eyeY = hy + 0.4;
     var blink = (t % 4.2) > 4.05;
     if (blink || mood === 'happy') {
       c.strokeStyle = '#5B3A45'; c.lineWidth = 0.26; c.lineCap = 'round';
-      c.beginPath(); c.moveTo(hx + 0.35, hy + 0.35); c.lineTo(hx + 1.0, hy + 0.35); c.stroke();
-      c.beginPath(); c.moveTo(hx + 1.5, hy + 0.3); c.lineTo(hx + 1.95, hy + 0.3); c.stroke();
+      c.beginPath(); c.moveTo(eyeFarX - 0.28, eyeY); c.lineTo(eyeFarX + 0.28, eyeY); c.stroke();
+      c.beginPath(); c.moveTo(eyeNearX - 0.32, eyeY); c.lineTo(eyeNearX + 0.32, eyeY); c.stroke();
     } else {
-      circle(c, hx + 0.7, hy + 0.35, 0.3); c.fill();
-      circle(c, hx + 1.68, hy + 0.3, 0.26); c.fill();
+      c.fillStyle = '#5B3A45';
+      circle(c, eyeFarX, eyeY, 0.27); c.fill();
+      circle(c, eyeNearX, eyeY, 0.33); c.fill();
       c.fillStyle = '#FFFFFF';
-      circle(c, hx + 0.78, hy + 0.26, 0.1); c.fill();
+      circle(c, eyeFarX + 0.07, eyeY - 0.08, 0.1); c.fill();
+      circle(c, eyeNearX + 0.1, eyeY - 0.1, 0.12); c.fill();
     }
     // 腮红
     c.fillStyle = 'rgba(255,140,175,0.45)';
-    circle(c, hx + 1.25, hy + 1.05, 0.45); c.fill();
-    // 嘴
-    c.strokeStyle = '#B95C7A'; c.lineWidth = 0.24; c.lineCap = 'round';
+    circle(c, hx + 1.5, hy + 1.2, 0.42); c.fill();
+    // 嘴：放在脸的下半部分中间，离鼻子远远的
+    c.strokeStyle = '#B95C7A'; c.lineWidth = 0.26; c.lineCap = 'round';
     c.beginPath();
-    c.arc(hx + 1.15, hy + 0.95, 0.45, 0.3, Math.PI - 0.4);
+    c.arc(hx + 0.7, hy + 1.25, 0.42, 0.35, Math.PI - 0.35);
     c.stroke();
   }
 

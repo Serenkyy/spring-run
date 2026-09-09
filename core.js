@@ -52,10 +52,11 @@
     PICKUP_MAGNET: 2.0,
     PICKUP_HEIGHT_MIN: 13,   // 道具都在空中：必须跳起来才拿得到
     PICKUP_HEIGHT_MAX: 19,
-    PICKUP_GAP_MIN: 1.9,     // 道具之间的间隔（秒）
-    PICKUP_GAP_MAX: 3.4,
-    LETTER_CHANCE: 0.30,     // 平时出现字母的概率（约 ×2.5）
-    LETTER_CHANCE_ACTIVE: 0.55, // 正在拼词时更高
+    PICKUP_GAP_MIN: 1.4,     // 道具之间的间隔（秒）
+    PICKUP_GAP_MAX: 2.5,
+    LETTER_CHANCE: 0.85,     // 平时出现字母的概率
+    LETTER_CHANCE_ACTIVE: 0.95, // 正在拼词时几乎必出
+    LETTER_STREAK_MAX: 5,    // 连续 5 个字母后强制换别的道具（免得爱心/牛肉面被挤没）
     MILESTONE_STEP: 500
   };
 
@@ -308,7 +309,7 @@
       },
       obstacles: [],
       pickups: [],
-      spawn: { nextObstacleAt: 30, nextPickupAt: 26, lastPattern: null, lastPickupAt: -99, forcePattern: null, lastSpawnDistance: -999 },
+      spawn: { nextObstacleAt: 30, nextPickupAt: 26, lastPattern: null, lastPickupAt: -99, forcePattern: null, lastSpawnDistance: -999, letterStreak: 0 },
       word: { index: 0, progress: 0, ru: WORDS[0].ru, zh: WORDS[0].zh },
       milestone: 0,
       shake: 0,
@@ -348,6 +349,7 @@
     st.spawn.lastPickupAt = -99;
     st.spawn.forcePattern = null;
     st.spawn.lastSpawnDistance = -999;
+    st.spawn.letterStreak = 0;
     st.word = { index: 0, progress: 0, ru: WORDS[0].ru, zh: WORDS[0].zh };
     st.milestone = 0;
     st.shake = 0;
@@ -512,16 +514,17 @@
   function spawnPickup(st) {
     var roll = st.rng();
     var kind, def;
-    // 字母要稀有：正在拼词时稍多一点，否则偶尔才出现
+    // 字母出得很多，但连续 4 个之后强制换一个别的道具
     var letterChance = st.word.progress > 0 ? TUNE.LETTER_CHANCE_ACTIVE : TUNE.LETTER_CHANCE;
+    if (st.spawn.letterStreak >= TUNE.LETTER_STREAK_MAX) letterChance = 0;
     if (st.rng() < letterChance && !pickupBlocked(st, st.world.w + 6, PICKUPS.letter.w)) {
       kind = 'letter';
-    } else if (roll < 0.12) {
-      kind = 'heart';
-    } else if (roll < 0.34) {
-      kind = 'noodle';
+      st.spawn.letterStreak = (st.spawn.letterStreak || 0) + 1;
     } else {
-      kind = 'note';
+      st.spawn.letterStreak = 0;
+      if (roll < 0.2) kind = 'heart';
+      else if (roll < 0.5) kind = 'noodle';
+      else kind = 'note';
     }
     def = PICKUPS[kind];
 
