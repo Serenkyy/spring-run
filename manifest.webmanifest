@@ -1,0 +1,26 @@
+{
+  "name": "自怡向前冲 · ZiYi Run",
+  "short_name": "自怡向前冲",
+  "description": "给王自怡的春日跑步小游戏：钢琴、旅行、牛肉面、网球、俄语单词，还有一路的加油。",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FFE0EF",
+  "theme_color": "#FFE0EF",
+  "lang": "zh-CN",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

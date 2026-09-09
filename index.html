@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>自怡向前冲 · ZiYi Run</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#FFE0EF">
+<meta name="description" content="给王自怡的春日跑步小游戏：钢琴、旅行、牛肉面、网球、俄语单词，还有一路的加油。">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="自怡向前冲">
+<meta name="format-detection" content="telephone=no">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-180.png">
+<style>
+  :root {
+    --pink: #FF8FB8;
+    --pink-deep: #C4577F;
+    --pink-soft: #FFD1E2;
+    --cream: #FFF7FA;
+    --ink: #8A5A6E;
+    --lav: #C9B6FF;
+    --safe-t: env(safe-area-inset-top, 0px);
+    --safe-b: env(safe-area-inset-bottom, 0px);
+    --safe-l: env(safe-area-inset-left, 0px);
+    --safe-r: env(safe-area-inset-right, 0px);
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    margin: 0; padding: 0; height: 100%; width: 100%;
+    overflow: hidden; position: fixed; inset: 0;
+    overscroll-behavior: none;
+    background: #FFE0EF;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB",
+                 "Microsoft YaHei", system-ui, sans-serif;
+    color: var(--ink);
+    -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none;
+    text-rendering: optimizeLegibility;
+  }
+
+  #stage {
+    position: fixed; inset: 0;
+    width: 100%; height: 100%;
+    height: 100dvh;
+    overflow: hidden;
+    touch-action: none;
+    background: #FFE0EF;
+  }
+
+  #game { display: block; width: 100%; height: 100%; }
+
+  /* ---------------- HUD ---------------- */
+
+  #hud {
+    position: absolute; inset: 0;
+    pointer-events: none;
+    padding: calc(var(--safe-t) + 10px) calc(var(--safe-r) + 14px) 0 calc(var(--safe-l) + 14px);
+    display: flex; flex-direction: column;
+  }
+
+  .hud-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+
+  .hud-level-box {
+    background: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    border-radius: 16px;
+    padding: 7px 12px 9px;
+    box-shadow: 0 6px 18px rgba(196, 87, 127, 0.16);
+    min-width: 132px;
+  }
+  .hud-level-row { display: flex; align-items: baseline; gap: 6px; }
+  #hud-level {
+    font-size: 15px; font-weight: 800; color: var(--pink-deep);
+    letter-spacing: 0.3px;
+  }
+  #hud-level-title { font-size: 12px; font-weight: 600; color: #B87D95; }
+  .xp-track {
+    margin-top: 6px; height: 6px; border-radius: 999px;
+    background: rgba(255, 143, 184, 0.22); overflow: hidden;
+  }
+  #hud-xp-fill {
+    height: 100%; width: 0%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #FFB3D1, #FF8FB8 60%, #C9B6FF);
+    transition: width 0.25s ease;
+  }
+
+  .hud-right { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+
+  #btn-mute {
+    pointer-events: auto;
+    width: 38px; height: 38px; border: 0; border-radius: 50%;
+    background: rgba(255, 255, 255, 0.75);
+    box-shadow: 0 6px 16px rgba(196, 87, 127, 0.16);
+    font-size: 17px; line-height: 1; cursor: pointer;
+    color: var(--pink-deep);
+  }
+  #btn-mute.muted { opacity: 0.55; }
+
+  #hud-hearts {
+    background: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    border-radius: 16px; padding: 6px 11px;
+    box-shadow: 0 6px 18px rgba(196, 87, 127, 0.16);
+    font-size: 16px; letter-spacing: 1px; line-height: 1.1;
+    display: flex; align-items: center; gap: 2px;
+  }
+  .heart { color: #FF6FA5; text-shadow: 0 1px 0 rgba(255,255,255,0.8); }
+  .heart.off { color: rgba(196, 87, 127, 0.2); }
+  .shield { font-size: 13px; margin-left: 3px; }
+
+  .hud-stats {
+    margin-top: 9px; align-self: flex-start;
+    display: flex; align-items: baseline; gap: 7px;
+    font-size: 15px; font-weight: 700; color: var(--pink-deep);
+    background: rgba(255, 255, 255, 0.62);
+    border-radius: 999px; padding: 4px 13px;
+    box-shadow: 0 4px 12px rgba(196, 87, 127, 0.12);
+  }
+  .hud-stats .dot { opacity: 0.45; }
+  #hud-score { font-variant-numeric: tabular-nums; }
+
+  #word-bar {
+    margin-top: 8px; align-self: flex-start;
+    display: flex; align-items: center; gap: 8px;
+    background: rgba(201, 182, 255, 0.32);
+    border: 1px solid rgba(201, 182, 255, 0.55);
+    border-radius: 999px; padding: 3px 12px;
+    font-size: 14px; font-weight: 800; color: #7A5CC4;
+    letter-spacing: 3px;
+    opacity: 0; transform: translateY(-6px);
+    transition: opacity 0.25s, transform 0.25s;
+  }
+  #word-bar.show { opacity: 1; transform: translateY(0); }
+  #word-bar .wb-label { font-size: 11px; letter-spacing: 0; opacity: 0.75; font-weight: 600; }
+
+  /* ---------------- 横幅 / 单词卡 ---------------- */
+
+  .banner {
+    position: absolute; left: 50%; top: 26%;
+    transform: translate(-50%, -50%) scale(0.86);
+    padding: 11px 20px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.9);
+    box-shadow: 0 10px 30px rgba(196, 87, 127, 0.22);
+    color: var(--pink-deep);
+    font-size: 16px; font-weight: 800;
+    white-space: nowrap; max-width: 88vw;
+    overflow: hidden; text-overflow: ellipsis;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.22s ease, transform 0.22s ease;
+  }
+  .banner.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  .banner.level { background: linear-gradient(120deg, #FFE3EF, #F0E6FF); }
+  .banner.hit { background: rgba(255, 226, 236, 0.95); color: #B23A63; }
+  .banner.milestone { background: linear-gradient(120deg, #FFF3B0, #FFD1E2); }
+  .banner.letter { background: rgba(240, 230, 255, 0.95); color: #7A5CC4; }
+  .banner.shield { background: linear-gradient(120deg, #D9F5E6, #E9E1FF); }
+  .banner.heal { background: linear-gradient(120deg, #FFE0EC, #FFFFFF); }
+  .banner.start { top: 40%; font-size: 18px; }
+
+  #word-card {
+    position: absolute; left: 50%; top: 44%;
+    transform: translate(-50%, -50%) scale(0.8);
+    padding: 18px 26px 16px;
+    border-radius: 24px;
+    background: linear-gradient(150deg, #FFFFFF, #FFEFF6);
+    box-shadow: 0 18px 46px rgba(196, 87, 127, 0.28);
+    text-align: center; opacity: 0; pointer-events: none;
+    transition: opacity 0.25s ease, transform 0.28s cubic-bezier(.2,1.5,.4,1);
+  }
+  #word-card.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  .wc-ru {
+    font-size: 32px; font-weight: 900; letter-spacing: 3px;
+    background: linear-gradient(120deg, #FF8FB8, #C9B6FF);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .wc-zh { margin-top: 4px; font-size: 17px; font-weight: 800; color: var(--pink-deep); }
+  .wc-msg { margin-top: 8px; font-size: 12px; color: #B87D95; font-weight: 600; }
+
+  /* ---------------- 按钮 ---------------- */
+
+  #btn-duck {
+    position: absolute;
+    right: calc(var(--safe-r) + 16px);
+    bottom: calc(var(--safe-b) + 20px);
+    width: 88px; height: 88px;
+    border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.9);
+    background: rgba(255, 255, 255, 0.42);
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    box-shadow: 0 8px 24px rgba(196, 87, 127, 0.2);
+    color: var(--pink-deep); font-size: 19px; font-weight: 900;
+    letter-spacing: 1px;
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 2px;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.25s, transform 0.08s;
+    touch-action: none;
+  }
+  #btn-duck.show { opacity: 1; pointer-events: auto; }
+  #btn-duck:active { transform: scale(0.93); background: rgba(255, 209, 226, 0.75); }
+  #btn-duck small { font-size: 10px; font-weight: 600; opacity: 0.7; }
+
+  #hint {
+    position: absolute; left: 50%; bottom: calc(var(--safe-b) + 26px);
+    transform: translateX(-50%);
+    font-size: 12px; font-weight: 700; color: rgba(196, 87, 127, 0.7);
+    background: rgba(255, 255, 255, 0.6);
+    padding: 5px 14px; border-radius: 999px;
+    white-space: nowrap; pointer-events: none;
+    transition: opacity 0.4s;
+  }
+  #hint.hide { opacity: 0; }
+
+  /* ---------------- 全屏界面 ---------------- */
+
+  #overlay {
+    position: absolute; inset: 0;
+    background: rgba(255, 226, 239, 0.42);
+    backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
+    opacity: 0; pointer-events: none; transition: opacity 0.3s;
+  }
+  #overlay.show { opacity: 1; pointer-events: auto; }
+
+  .screen {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: flex-start;
+    padding: calc(var(--safe-t) + 26px) 22px calc(var(--safe-b) + 22px);
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.32s ease;
+    overflow-y: auto; -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;          /* 小屏/横屏时卡片可以滚动 */
+  }
+  .screen.show { opacity: 1; pointer-events: auto; }
+
+  .card {
+    width: 100%; max-width: 400px;
+    background: rgba(255, 255, 255, 0.82);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    border-radius: 28px;
+    padding: 22px 20px 20px;
+    box-shadow: 0 20px 50px rgba(196, 87, 127, 0.24);
+    text-align: center;
+    margin-bottom: 16px;
+  }
+
+  .title {
+    font-size: 34px; font-weight: 900; letter-spacing: 1px;
+    background: linear-gradient(120deg, #FF8FB8 10%, #FFB3D1 45%, #C9B6FF 95%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    line-height: 1.15;
+  }
+  .subtitle { margin-top: 6px; font-size: 13px; font-weight: 700; color: #B87D95; }
+
+  .greeting {
+    margin-top: 12px; font-size: 14px; font-weight: 800;
+    color: var(--pink-deep); line-height: 1.5;
+  }
+  .best-line {
+    margin: 10px 0 4px; font-size: 13px; font-weight: 700;
+    color: #B87D95; line-height: 1.6;
+  }
+  .best-line b { font-size: 16px; }
+
+  .btn {
+    display: block; width: 100%;
+    margin-top: 12px; padding: 15px 18px;
+    border: 0; border-radius: 18px;
+    font-family: inherit; font-size: 18px; font-weight: 900;
+    color: #FFFFFF; letter-spacing: 1px;
+    background: linear-gradient(120deg, #FFA6C6, #FF8FB8 55%, #E29BD0);
+    box-shadow: 0 10px 24px rgba(255, 143, 184, 0.45);
+    cursor: pointer; transition: transform 0.09s ease, box-shadow 0.2s;
+    -webkit-appearance: none; appearance: none;
+  }
+  .btn:active { transform: scale(0.97); box-shadow: 0 5px 14px rgba(255, 143, 184, 0.4); }
+  .btn.ghost {
+    background: rgba(255, 255, 255, 0.9);
+    color: var(--pink-deep);
+    box-shadow: 0 6px 18px rgba(196, 87, 127, 0.16);
+    font-size: 15px; padding: 12px 18px;
+  }
+  .btn-row { display: flex; gap: 10px; }
+  .btn-row .btn { margin-top: 10px; }
+
+  #how {
+    display: none; margin-top: 14px; text-align: left;
+    font-size: 13px; line-height: 1.85; color: #A2697F;
+    background: rgba(255, 241, 247, 0.9);
+    border-radius: 18px; padding: 13px 15px;
+  }
+  #how.show { display: block; }
+  #how b { color: var(--pink-deep); }
+  #how .row { display: flex; gap: 8px; align-items: flex-start; }
+  #how .ico { flex: 0 0 auto; }
+
+  #over-stats {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 8px; margin: 14px 0 6px;
+  }
+  .stat {
+    background: rgba(255, 241, 247, 0.85);
+    border-radius: 14px; padding: 9px 4px;
+  }
+  .stat b { display: block; font-size: 19px; color: var(--pink-deep); font-variant-numeric: tabular-nums; }
+  .stat span { display: block; margin-top: 2px; font-size: 11px; color: #B87D95; font-weight: 700; }
+
+  #over-msg {
+    margin-top: 12px; font-size: 15px; font-weight: 800;
+    color: var(--pink-deep); line-height: 1.6;
+  }
+  #over-title {
+    font-size: 26px; font-weight: 900;
+    background: linear-gradient(120deg, #FF8FB8, #C9B6FF);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+
+  .credit {
+    font-size: 11px; color: rgba(196, 87, 127, 0.55);
+    font-weight: 600; text-align: center; margin-top: 2px;
+  }
+
+  @media (max-height: 700px) {
+    .title { font-size: 28px; }
+    .card { padding: 18px 16px 16px; border-radius: 24px; }
+    .btn { padding: 13px 16px; font-size: 17px; }
+    #btn-duck { width: 76px; height: 76px; font-size: 17px; }
+  }
+  @media (orientation: landscape) {
+    .screen { padding-top: calc(var(--safe-t) + 12px); }
+    .title { font-size: 26px; }
+    .card { max-width: 460px; padding: 16px 18px; }
+    #over-stats { grid-template-columns: repeat(6, 1fr); }
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="game"></canvas>
+
+  <div id="hud">
+    <div class="hud-top">
+      <div class="hud-level-box">
+        <div class="hud-level-row">
+          <span id="hud-level">Lv.1</span>
+          <span id="hud-level-title">樱花起跑</span>
+        </div>
+        <div class="xp-track"><div id="hud-xp-fill"></div></div>
+      </div>
+      <div class="hud-right">
+        <button id="btn-mute" aria-label="声音开关">🔊</button>
+        <div id="hud-hearts"></div>
+      </div>
+    </div>
+    <div class="hud-stats">
+      <span id="hud-dist">0 米</span>
+      <span class="dot">·</span>
+      <span id="hud-score">0</span>
+    </div>
+    <div id="word-bar"><span class="wb-label">拼单词</span><span id="word-now"></span></div>
+  </div>
+
+  <div id="banner" class="banner"></div>
+  <div id="word-card"></div>
+  <button id="btn-duck">蹲<small>按住</small></button>
+  <div id="hint" class="hide">点屏幕 = 跳　·　右下角按住 = 蹲</div>
+
+  <div id="overlay"></div>
+
+  <!-- 开始界面 -->
+  <div id="screen-start" class="screen">
+    <div class="card">
+      <div class="title">自怡向前冲</div>
+      <div class="subtitle">给王自怡的小游戏 ♥　春日与夏天都在这里</div>
+      <div class="greeting" id="start-greeting"></div>
+      <div class="best-line" id="start-best">第一次玩的话，慢慢来就好 ♥</div>
+      <button class="btn" id="btn-start">开始跑</button>
+      <button class="btn ghost" id="btn-how">怎么玩？</button>
+      <div id="how">
+        <div class="row"><span class="ico">👆</span><span><b>点屏幕</b>：跳起来。按住不放会跳得更高。</span></div>
+        <div class="row"><span class="ico">👇</span><span><b>按住右下角「蹲」</b>（或向下滑）：钻过空中的音符、网球和书。</span></div>
+        <div class="row"><span class="ico">♥</span><span>有 <b>3 颗心</b>，撞一下掉一颗，每 3 关回一颗。</span></div>
+        <div class="row"><span class="ico">♪</span><span>捡音符、牛肉面和<b>俄语字母</b>能加分升级。</span></div>
+        <div class="row"><span class="ico">📚</span><span>按顺序拼出 ПРИВЕТ、СПАСИБО 这些词，有额外奖励。</span></div>
+      </div>
+      <div class="credit">Made with ♥ for 王自怡</div>
+    </div>
+  </div>
+
+  <!-- 结束界面 -->
+  <div id="screen-over" class="screen">
+    <div class="card">
+      <div id="over-title">这一趟结束啦</div>
+      <div id="over-stats"></div>
+      <div id="over-msg"></div>
+      <button class="btn" id="btn-again">再来一次</button>
+      <div class="btn-row">
+        <button class="btn ghost" id="btn-share">分享成绩</button>
+      </div>
+      <div class="credit">轻点屏幕也可以直接重来</div>
+    </div>
+  </div>
+</div>
+
+<script src="core.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
