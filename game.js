@@ -427,23 +427,25 @@
     c.quadraticCurveTo(hx - 1.3, hy - 1.5, hx - 2.0, hy + 0.1);
     c.closePath();
     c.fill();
-    // 眼睛：左右各一只（远的那只小一点，近的大一点 —— 3/4 侧脸）
+    // 眼睛：左右各一只，大小完全一样
     var eyeFarX = hx - 0.5, eyeNearX = hx + 1.15, eyeY = hy + 0.4;
+    var eyeR = 0.31;
     var blink = (t % 4.2) > 4.05;
     if (blink || mood === 'happy') {
       c.strokeStyle = '#5B3A45'; c.lineWidth = 0.26; c.lineCap = 'round';
-      c.beginPath(); c.moveTo(eyeFarX - 0.28, eyeY); c.lineTo(eyeFarX + 0.28, eyeY); c.stroke();
-      c.beginPath(); c.moveTo(eyeNearX - 0.32, eyeY); c.lineTo(eyeNearX + 0.32, eyeY); c.stroke();
+      c.beginPath(); c.moveTo(eyeFarX - 0.3, eyeY); c.lineTo(eyeFarX + 0.3, eyeY); c.stroke();
+      c.beginPath(); c.moveTo(eyeNearX - 0.3, eyeY); c.lineTo(eyeNearX + 0.3, eyeY); c.stroke();
     } else {
       c.fillStyle = '#5B3A45';
-      circle(c, eyeFarX, eyeY, 0.27); c.fill();
-      circle(c, eyeNearX, eyeY, 0.33); c.fill();
+      circle(c, eyeFarX, eyeY, eyeR); c.fill();
+      circle(c, eyeNearX, eyeY, eyeR); c.fill();
       c.fillStyle = '#FFFFFF';
-      circle(c, eyeFarX + 0.07, eyeY - 0.08, 0.1); c.fill();
-      circle(c, eyeNearX + 0.1, eyeY - 0.1, 0.12); c.fill();
+      circle(c, eyeFarX + 0.09, eyeY - 0.09, 0.11); c.fill();
+      circle(c, eyeNearX + 0.09, eyeY - 0.09, 0.11); c.fill();
     }
-    // 腮红
+    // 腮红：嘴的两边各一个（以嘴为中心左右对称）
     c.fillStyle = 'rgba(255,140,175,0.45)';
+    circle(c, hx - 0.1, hy + 1.2, 0.42); c.fill();
     circle(c, hx + 1.5, hy + 1.2, 0.42); c.fill();
     // 嘴：放在脸的下半部分中间，离鼻子远远的
     c.strokeStyle = '#B95C7A'; c.lineWidth = 0.26; c.lineCap = 'round';

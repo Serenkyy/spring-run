@@ -350,16 +350,21 @@ const face = await page.evaluate(() => {
   }
   const xs = eyes.map(e => e[0]).sort((a, b) => a - b);
   let clusters = 0, run = 0, prev = -999;
+  const clusterSizes = [];
   for (const x of xs) {
-    if (x - prev > 6) { if (run >= 8) clusters++; run = 0; }
+    if (x - prev > 6) { if (run >= 8) { clusters++; clusterSizes.push(run); } run = 0; }
     run++; prev = x;
   }
-  if (run >= 8) clusters++;
+  if (run >= 8) { clusters++; clusterSizes.push(run); }
   const avgY = (arr) => arr.length ? arr.reduce((a, p) => a + p[1], 0) / arr.length : -1;
-  return { clusters, eyeCount: eyes.length, mouthCount: mouth.length, eyeY: avgY(eyes), mouthY: avgY(mouth), ph };
+  return { clusters, eyeCount: eyes.length, mouthCount: mouth.length, eyeY: avgY(eyes), mouthY: avgY(mouth), ph, clusterSizes: clusterSizes };
 });
 check('脸上有两只分开的眼睛（左眼别再丢了）', face.clusters >= 2 && face.eyeCount > 40,
   'cluster=' + face.clusters + ' eyes=' + face.eyeCount);
+const sizes = face.clusterSizes || [];
+const sizeRatio = sizes.length >= 2 ? Math.min(...sizes) / Math.max(...sizes) : 0;
+check('两只眼睛一样大（用户报过大小不一）', sizeRatio > 0.8,
+  '簇大小 ' + JSON.stringify(sizes) + ' 比例 ' + sizeRatio.toFixed(2));
 check('嘴在眼睛下面（微笑不在鼻子上）', face.mouthCount > 10 && face.mouthY > face.eyeY + 4,
   'eyeY=' + face.eyeY.toFixed(1) + ' mouthY=' + face.mouthY.toFixed(1) + ' mouthPx=' + face.mouthCount);
 
