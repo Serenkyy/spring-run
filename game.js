@@ -328,8 +328,9 @@
 
   var SKIN_BACK = '#F0C0A4';
 
-  /* 鞋尖一律朝右（前进方向），这是"她往前跑"最直接的提示 */
-  function drawShoe(c, back, tilt) {
+  /* 鞋尖一律朝右（前进方向），这是"她往前跑"最直接的提示。
+     注意：不能叫 drawShoe —— 那是障碍物里那双跑鞋的名字，重名会被覆盖。 */
+  function drawRunnerShoe(c, back, tilt) {
     c.save();
     c.rotate(tilt);
     c.fillStyle = back ? '#F2F2F2' : '#FFFFFF';
@@ -362,24 +363,24 @@
     c.beginPath(); c.moveTo(kneeX, kneeY); c.lineTo(footX, footY); c.stroke();
     c.save();
     c.translate(footX, footY);
-    drawShoe(c, back, sw * 0.14);
+    drawRunnerShoe(c, back, sw * 0.14);
     c.restore();
   }
 
   /* 手臂弯曲、前后摆，且与同侧腿反相（右腿在前 → 左臂在前） */
   function drawArm(c, phase, back) {
     var sw = Math.sin(phase);
-    var sx = back ? -0.7 : 0.75, sy = -7.5;
-    var ex = sx + sw * 1.0;
-    var ey = sy + 1.15;
-    var hx = ex + sw * 0.8 + 0.3;
-    var hy = ey + 0.5;
+    var sx = back ? -1.05 : 1.15, sy = -7.3;
+    var ex = sx + sw * 1.25;
+    var ey = sy + 1.05;
+    var hx = ex + sw * 1.05 + 0.15;
+    var hy = ey + 0.6;
     c.lineCap = 'round';
     c.strokeStyle = back ? SKIN_BACK : PAL.skin;
-    c.lineWidth = back ? 0.82 : 0.95;
+    c.lineWidth = back ? 0.9 : 1.08;
     c.beginPath(); c.moveTo(sx, sy); c.lineTo(ex, ey); c.lineTo(hx, hy); c.stroke();
     c.fillStyle = back ? SKIN_BACK : PAL.skin;
-    circle(c, hx, hy, 0.5); c.fill();
+    circle(c, hx, hy, 0.56); c.fill();
   }
 
   /* 3/4 侧脸，朝右：眼睛、鼻子、嘴都在脸的右半边 */
@@ -453,18 +454,18 @@
     c.fillStyle = PAL.pink;
     c.beginPath();
     c.moveTo(-2.0, -7.6);
-    c.quadraticCurveTo(-3.3, -5.4, -3.1, -3.3);
-    c.quadraticCurveTo(0, -2.5, 3.1, -3.3);
-    c.quadraticCurveTo(3.3, -5.4, 2.0, -7.6);
+    c.quadraticCurveTo(-3.2, -5.9, -3.0, -4.2);
+    c.quadraticCurveTo(0, -3.5, 3.0, -4.2);
+    c.quadraticCurveTo(3.2, -5.9, 2.0, -7.6);
     c.closePath();
     c.fill();
     // 裙子亮面
     c.fillStyle = 'rgba(255,255,255,0.35)';
     c.beginPath();
     c.moveTo(-0.4, -7.4);
-    c.quadraticCurveTo(-1.6, -5.2, -1.4, -3.4);
-    c.quadraticCurveTo(0, -3.0, 0.7, -3.4);
-    c.quadraticCurveTo(0.7, -5.4, 0.4, -7.4);
+    c.quadraticCurveTo(-1.5, -5.8, -1.3, -4.3);
+    c.quadraticCurveTo(0, -3.9, 0.6, -4.3);
+    c.quadraticCurveTo(0.6, -5.8, 0.4, -7.4);
     c.closePath();
     c.fill();
     // 领口
@@ -474,7 +475,7 @@
     c.fill();
     // 腰间小蝴蝶结
     c.fillStyle = '#FF6FA5';
-    circle(c, 0, -5.0, 0.42); c.fill();
+    circle(c, 0, -5.5, 0.42); c.fill();
   }
 
   /* 跳跃：腿收起、手向上 */
@@ -484,21 +485,21 @@
     // 后腿
     c.strokeStyle = SKIN_BACK; c.lineWidth = 1.0;
     c.beginPath(); c.moveTo(-0.5, -4.5); c.lineTo(-1.7, -3.2); c.lineTo(-1.5, -1.6); c.stroke();
-    // 后手
-    c.strokeStyle = SKIN_BACK; c.lineWidth = 0.82;
-    c.beginPath(); c.moveTo(-0.7, -7.5); c.lineTo(-1.7, -8.6); c.lineTo(-1.6, -9.9); c.stroke();
-    c.fillStyle = SKIN_BACK; circle(c, -1.6, -9.9, 0.5); c.fill();
+    // 后手（向上、向外张开，别被脑袋挡住）
+    c.strokeStyle = SKIN_BACK; c.lineWidth = 0.85;
+    c.beginPath(); c.moveTo(-0.9, -7.4); c.lineTo(-2.1, -8.2); c.lineTo(-2.95, -8.9); c.stroke();
+    c.fillStyle = SKIN_BACK; circle(c, -2.95, -8.9, 0.5); c.fill();
     drawBody(c, phase);
     // 前腿
     c.strokeStyle = PAL.skin; c.lineWidth = 1.15;
     c.beginPath(); c.moveTo(0.55, -4.5); c.lineTo(1.8, -3.5); c.lineTo(1.6, -1.7); c.stroke();
     // 前手
-    c.strokeStyle = PAL.skin; c.lineWidth = 0.95;
-    c.beginPath(); c.moveTo(0.75, -7.5); c.lineTo(1.8, -8.7); c.lineTo(1.8, -10.1); c.stroke();
-    c.fillStyle = PAL.skin; circle(c, 1.8, -10.1, 0.5); c.fill();
+    c.strokeStyle = PAL.skin; c.lineWidth = 1.0;
+    c.beginPath(); c.moveTo(1.0, -7.4); c.lineTo(2.25, -8.3); c.lineTo(3.15, -9.0); c.stroke();
+    c.fillStyle = PAL.skin; circle(c, 3.15, -9.0, 0.52); c.fill();
     // 鞋
-    c.save(); c.translate(-1.5, -1.6); drawShoe(c, true, -0.28); c.restore();
-    c.save(); c.translate(1.6, -1.7); drawShoe(c, false, 0.24); c.restore();
+    c.save(); c.translate(-1.5, -1.6); drawRunnerShoe(c, true, -0.28); c.restore();
+    c.save(); c.translate(1.6, -1.7); drawRunnerShoe(c, false, 0.24); c.restore();
     drawHead(c, t, 'happy');
   }
 
@@ -509,7 +510,7 @@
     // 后腿
     c.strokeStyle = SKIN_BACK; c.lineWidth = 1.0;
     c.beginPath(); c.moveTo(-1.6, -2.7); c.lineTo(-3.0, -1.2); c.lineTo(-3.4, -0.6); c.stroke();
-    c.save(); c.translate(-3.4, -0.6); drawShoe(c, true, 0); c.restore();
+    c.save(); c.translate(-3.4, -0.6); drawRunnerShoe(c, true, 0); c.restore();
     // 身体（前倾）
     c.fillStyle = PAL.pink;
     c.beginPath(); c.ellipse(-0.3, -3.1, 3.0, 1.85, 0.12, 0, Math.PI * 2); c.fill();
@@ -518,7 +519,7 @@
     // 前腿
     c.strokeStyle = PAL.skin; c.lineWidth = 1.15;
     c.beginPath(); c.moveTo(1.0, -2.5); c.lineTo(2.2, -1.3); c.lineTo(2.6, -0.7); c.stroke();
-    c.save(); c.translate(2.6, -0.7); drawShoe(c, false, 0); c.restore();
+    c.save(); c.translate(2.6, -0.7); drawRunnerShoe(c, false, 0); c.restore();
     // 手向前伸
     c.strokeStyle = PAL.skin; c.lineWidth = 0.95;
     c.beginPath(); c.moveTo(0.5, -3.5); c.lineTo(1.9, -3.1); c.lineTo(3.0, -2.5); c.stroke();

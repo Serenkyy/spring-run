@@ -4,6 +4,7 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
@@ -140,6 +141,7 @@ test('字母是稀有的，道具总量也不多', () => {
   let letters = 0, total = 0;
   for (let i = 0; i < 60 * 180; i++) {
     Core.step(st, 1 / 60, ai(st));
+    st.word.progress = 0;              // 强制基线频率，排除「正在拼词」的加成
     for (const pk of st.pickups) {
       if (seen.has(pk)) continue;
       seen.add(pk);
@@ -149,9 +151,21 @@ test('字母是稀有的，道具总量也不多', () => {
     if (st.phase !== 'playing') Core.resetRun(st, { seed: 400 + i });
   }
   assert.ok(total > 10, '道具太少了: ' + total);
-  assert.ok(letters / total < 0.3, '字母占 ' + (letters / total * 100).toFixed(0) + '%，还是太多');
+  assert.ok(letters / total < 0.45, '基线字母占 ' + (letters / total * 100).toFixed(0) + '%，还是太多');
   const perMin = total / 180 * 60;
   assert.ok(perMin < 40, '道具密度还是太高: ' + perMin.toFixed(0) + ' 个/分钟');
+  const letterPerMin = letters / 180 * 60;
+  assert.ok(letterPerMin > 2.5 && letterPerMin < 12,
+    '字母频率 ' + letterPerMin.toFixed(1) + ' 个/分钟，应该在 2.5~12 之间');
+});
+
+test('源码里没有重名的函数（曾经重名把角色的鞋子画没了）', () => {
+  for (const file of ['../game.js', '../core.js']) {
+    const src = fs.readFileSync(new URL(file, import.meta.url), 'utf8');
+    const names = [...src.matchAll(/^[ \t]*function[ \t]+([A-Za-z0-9_$]+)/gm)].map(m => m[1]);
+    const dupes = [...new Set(names.filter((n, i) => names.indexOf(n) !== i))];
+    assert.deepEqual(dupes, [], file + ' 里有重名函数: ' + dupes.join(', '));
+  }
 });
 
 test('世界几何：站立会撞到空中障碍，下蹲能钻过去', () => {

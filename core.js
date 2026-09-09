@@ -54,8 +54,8 @@
     PICKUP_HEIGHT_MAX: 19,
     PICKUP_GAP_MIN: 1.9,     // 道具之间的间隔（秒）
     PICKUP_GAP_MAX: 3.4,
-    LETTER_CHANCE: 0.16,     // 平时出现字母的概率
-    LETTER_CHANCE_ACTIVE: 0.55, // 正在拼词时提高一点，但还是很稀有
+    LETTER_CHANCE: 0.30,     // 平时出现字母的概率（约 ×2.5）
+    LETTER_CHANCE_ACTIVE: 0.55, // 正在拼词时更高
     MILESTONE_STEP: 500
   };
 

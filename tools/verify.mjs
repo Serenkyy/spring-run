@@ -306,6 +306,27 @@ const facing = await page.evaluate(() => {
 });
 const fmt = (f) => 'hair[' + f.hairMin.toFixed(1) + ',' + f.hairMax.toFixed(1) + '] skin[' +
   f.skinMin.toFixed(1) + ',' + f.skinMax.toFixed(1) + '] hairL/R=' + (f.hairL / Math.max(1, f.hairR)).toFixed(2);
+const shoes = await page.evaluate(() => {
+  const Z = window.__ZIYI__, s = Z.state, v = Z.view, T = Z.Core.TUNE;
+  const c = document.getElementById('game');
+  const ctx = c.getContext('2d');
+  const dpr = c.width / c.getBoundingClientRect().width;
+  const u = v.u;
+  const x0 = Math.round((s.player.x - 2) * u * dpr);
+  const y0 = Math.round((T.GROUND_Y - 4) * u * dpr);
+  const pw = Math.round((s.player.w + 4) * u * dpr);
+  const ph = Math.round(3.5 * u * dpr);
+  const d = ctx.getImageData(x0, y0, pw, ph).data;
+  let white = 0, pink = 0;
+  for (let i = 0; i < d.length; i += 4) {
+    const r = d[i], g = d[i + 1], b = d[i + 2];
+    if (r > 244 && g > 244 && b > 244) white++;
+    if (r > 240 && g > 120 && g < 170 && b > 165 && b < 205) pink++;
+  }
+  return { white, pink };
+});
+check('脚上真的有白色跑鞋（函数重名 bug 的回归测试）', shoes.white > 25, JSON.stringify(shoes));
+
 check('马尾在身后（比脸更靠左）→ 朝右跑', facing.hairMin < facing.skinMin - 1.5, fmt(facing));
 check('脸/鼻子在前进方向（不比头发更靠左）', facing.skinMax > facing.hairMax - 0.5 && facing.skinR > facing.skinL,
   fmt(facing));
